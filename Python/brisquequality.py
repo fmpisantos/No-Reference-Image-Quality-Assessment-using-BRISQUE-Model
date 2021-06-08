@@ -16,10 +16,14 @@ if sys.version_info[0] < 3:
 else:
     # if python 3.x version 
     # make sure the file is in libsvm/python folder
-    import svm
-    import svmutil
-    from svm import *
-    from svmutil import *
+    import brisq.Python.libsvm.python.svm as svm
+    #import svm
+    import brisq.Python.libsvm.python.svmutil as svmutil
+    #import svmutil
+    from brisq.Python.libsvm.python.svm import *
+    from brisq.Python.libsvm.python.svmutil import *
+    #from svm import *
+    #from svmutil import *
 
 # AGGD fit model, takes input as the MSCN Image / Pair-wise Product
 def AGGDfit(structdis):
@@ -91,8 +95,9 @@ def compute_features(img):
         # calculating MSCN coefficients
         mu = cv2.GaussianBlur(im, (7, 7), 1.166)
         mu_sq = mu * mu
+
         sigma = cv2.GaussianBlur(im*im, (7, 7), 1.166)
-        sigma = (sigma - mu_sq)**0.5
+        sigma = (sigma - mu_sq) ** 0.5
         
         # structdis is the MSCN image
         structdis = im - mu
@@ -142,20 +147,46 @@ def compute_features(img):
         im_original = cv2.resize(im_original, (0,0), fx=0.5, fy=0.5, interpolation=cv2.INTER_CUBIC)
     return feat
 
+def preprocess_image(img):
+    """Handle any kind of input for our convenience.
+
+    :param img: The image path or array.
+    :type img: str, np.ndarray
+    """
+    if isinstance(img, str):
+        if os.path.exists(img):
+            return cv2.cvtColor(cv2.imread(img, 1), cv2.COLOR_BGR2GRAY)
+        else:
+            raise FileNotFoundError('The image is not found on your '
+                                    'system.')
+    elif isinstance(img, np.ndarray):
+        if len(img.shape) == 2:
+            return img
+        elif len(img.shape) == 3:
+            return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        else:
+            raise ValueError('The image shape is not correct.')
+    else:
+        raise ValueError('You can only pass image to the constructor.')
+
 # function to calculate BRISQUE quality score 
 # takes input of the image path
-def test_measure_BRISQUE(imgPath):
+def test_measure_BRISQUE(imgPath,f):
     # read image from given path
-    dis = cv2.imread(imgPath, 1)
+    '''dis = cv2.imread(imgPath, 1)
     if(dis is None):
         print("Wrong image path given")
         print("Exiting...")
         sys.exit(0)
     # convert to gray scale
-    dis = cv2.cvtColor(dis, cv2.COLOR_BGR2GRAY)
+    dis = cv2.cvtColor(dis, cv2.COLOR_BGR2GRAY)'''
+    dis = preprocess_image(imgPath)
 
     # compute feature vectors of the image
-    features = compute_features(dis)
+    if f == False:
+        features = compute_features(dis)
+    else:
+        features = f
 
     # rescale the brisqueFeatures vector from -1 to 1
     x = [0]
@@ -177,8 +208,8 @@ def test_measure_BRISQUE(imgPath):
     # create svm node array from python list
     x, idx = gen_svm_nodearray(x[1:], isKernel=(model.param.kernel_type == PRECOMPUTED))
     x[36].index = -1 # set last index to -1 to indicate the end.
-	
-	# get important parameters from model
+    
+    # get important parameters from model
     svm_type = model.get_svm_type()
     is_prob_model = model.is_probability_model()
     nr_class = model.get_nr_class()
@@ -194,7 +225,7 @@ def test_measure_BRISQUE(imgPath):
     return qualityscore
 
 # exit if input argument not given
-if(len(sys.argv) != 2):
+'''if(len(sys.argv) != 2):
     print("Please give input argument of the image path.")
     print("Arguments expected: <image_path>")
     print("--------------------------------")
@@ -203,4 +234,4 @@ if(len(sys.argv) != 2):
 
 # calculate quality score
 qualityscore = test_measure_BRISQUE(sys.argv[1])
-print "Score of the given image: ", qualityscore
+print("Score of the given image: ", qualityscore)'''
